@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1b5e20">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Hardloop">
+  <title>Hardloop Interval</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/icon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ============ SETUP VIEW ============ -->
+  <div id="view-setup" class="view">
+
+    <header>
+      <h1>Hardloop Interval</h1>
+    </header>
+
+    <main>
+
+      <!-- Schema kiezer -->
+      <div class="card schema-bar">
+        <select id="schema-select" aria-label="Kies een schema"></select>
+        <div class="schema-actions">
+          <button id="btn-save" class="btn btn-secondary">Opslaan</button>
+          <button id="btn-delete" class="btn btn-danger">Verwijder</button>
+        </div>
+      </div>
+
+      <!-- Schema naam -->
+      <div class="card">
+        <label class="field-row">
+          <span class="field-label">Schema naam</span>
+          <input type="text" id="schema-name" placeholder="bijv. Week 1" autocomplete="off" spellcheck="false">
+        </label>
+      </div>
+
+      <!-- Warming-up -->
+      <div class="card">
+        <div class="card-title">Warming-up (wandelen)</div>
+        <div class="time-row">
+          <div class="time-field">
+            <input type="number" id="warmup-min" min="0" max="99" value="5" inputmode="numeric">
+            <span>min</span>
+          </div>
+          <span class="time-colon">:</span>
+          <div class="time-field">
+            <input type="number" id="warmup-sec" min="0" max="59" value="0" inputmode="numeric">
+            <span>sec</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Intervallen -->
+      <div class="card">
+        <div class="card-title">Intervallen</div>
+
+        <!-- Eenvoudige modus -->
+        <div id="simple-mode">
+          <div class="interval-grid">
+            <span class="interval-tag type-run">Rennen</span>
+            <div class="time-row">
+              <div class="time-field">
+                <input type="number" id="run-min" min="0" max="99" value="1" inputmode="numeric">
+                <span>min</span>
+              </div>
+              <span class="time-colon">:</span>
+              <div class="time-field">
+                <input type="number" id="run-sec" min="0" max="59" value="0" inputmode="numeric">
+                <span>sec</span>
+              </div>
+            </div>
+
+            <span class="interval-tag type-walk">Wandelen</span>
+            <div class="time-row">
+              <div class="time-field">
+                <input type="number" id="walk-min" min="0" max="99" value="2" inputmode="numeric">
+                <span>min</span>
+              </div>
+              <span class="time-colon">:</span>
+              <div class="time-field">
+                <input type="number" id="walk-sec" min="0" max="59" value="0" inputmode="numeric">
+                <span>sec</span>
+              </div>
+            </div>
+
+            <span class="interval-tag" style="background:none;border:none;color:var(--muted)">Herhalingen</span>
+            <div class="time-row">
+              <div class="time-field">
+                <input type="number" id="repetitions" min="1" max="99" value="6" inputmode="numeric">
+                <span>×</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Toggle naar geavanceerde modus -->
+        <label class="toggle-row" id="advanced-toggle-wrap">
+          <input type="checkbox" id="advanced-toggle">
+          <span>Blokken individueel bewerken</span>
+        </label>
+
+        <!-- Geavanceerde modus -->
+        <div id="advanced-mode" hidden>
+          <div id="blocks-list"></div>
+          <div class="add-buttons">
+            <button id="btn-add-run" class="btn btn-add type-run-btn">+ Renblok</button>
+            <button id="btn-add-walk" class="btn btn-add type-walk-btn">+ Wandelblok</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Cooling-down -->
+      <div class="card">
+        <div class="card-title">Cooling-down (uitlopen)</div>
+        <div class="time-row">
+          <div class="time-field">
+            <input type="number" id="cooldown-min" min="0" max="99" value="5" inputmode="numeric">
+            <span>min</span>
+          </div>
+          <span class="time-colon">:</span>
+          <div class="time-field">
+            <input type="number" id="cooldown-sec" min="0" max="59" value="0" inputmode="numeric">
+            <span>sec</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Opties -->
+      <div class="card">
+        <div class="card-title">Opties</div>
+        <label class="field-row">
+          <span class="field-label">Aankondiging</span>
+          <div class="time-row">
+            <div class="time-field">
+              <input type="number" id="announce-secs" min="0" max="60" value="10" inputmode="numeric">
+              <span>sec voor wissel (0 = uit)</span>
+            </div>
+          </div>
+        </label>
+        <div class="card-divider"></div>
+        <label class="field-row">
+          <span class="field-label">Stem</span>
+          <select id="voice-select" class="voice-select"></select>
+        </label>
+      </div>
+
+      <!-- Geschiedenis -->
+      <div class="card" id="history-card">
+        <div class="card-title">Geschiedenis</div>
+        <div id="history-list"></div>
+      </div>
+
+      <!-- Totale duur -->
+      <p id="total-duration" class="total-dur"></p>
+
+      <!-- Start knop -->
+      <button id="btn-start" class="btn btn-start">Start training</button>
+
+    </main>
+  </div>
+
+
+  <!-- ============ RUNNING VIEW ============ -->
+  <div id="view-running" class="view" hidden>
+    <div class="run-screen">
+
+      <div class="run-header">
+        <span id="phase-counter" class="phase-counter"></span>
+        <span id="run-total-time" class="run-total-time"></span>
+      </div>
+
+      <div class="run-phase">
+        <div id="phase-name" class="run-phase-name">Warming-up</div>
+        <div id="phase-type" class="run-phase-type walk">Wandelen</div>
+      </div>
+
+      <div id="block-time" class="run-block-time">0:00</div>
+
+      <div class="run-progress">
+        <div class="progress-track">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+      </div>
+
+      <p id="run-distance" class="run-distance"></p>
+
+      <div class="run-controls">
+        <button id="btn-pause" class="btn btn-pause-run">Pauze</button>
+        <button id="btn-stop" class="btn btn-stop-run">Stop</button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ============ RESULTS VIEW ============ -->
+  <div id="view-results" class="view" hidden>
+    <div class="results-screen">
+
+      <div id="results-icon" class="results-icon">✓</div>
+      <h2 id="results-title" class="results-heading">Training voltooid</h2>
+
+      <div class="results-stats">
+        <div class="stat-block">
+          <div class="stat-value" id="result-time">0:00</div>
+          <div class="stat-label">Duur</div>
+        </div>
+        <div class="stat-block" id="result-dist-block">
+          <div class="stat-value" id="result-distance">0.00 km</div>
+          <div class="stat-label">Afstand (GPS)</div>
+        </div>
+      </div>
+
+      <p id="result-schema-name" class="result-schema-name"></p>
+
+      <button id="btn-results-back" class="btn btn-start">Terug naar schema</button>
+
+    </div>
+  </div>
+
+
+  <!-- Toast melding -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head><meta charset="UTF-8"><title>Iconen genereren</title></head>
+<body style="font-family:sans-serif;padding:20px;background:#111;color:#fff">
+<h2>Stap 1: Klik op "Genereer iconen"</h2>
+<h2>Stap 2: Rechtsclick op elk icoon → "Afbeelding opslaan als..."</h2>
+<h2>Stap 3: Sla op als <code>icon-192.png</code> en <code>icon-512.png</code> in de <code>icons/</code> map</h2>
+<br>
+<button onclick="generate()" style="padding:12px 24px;font-size:16px;cursor:pointer">Genereer iconen</button>
+<br><br>
+<div id="out"></div>
+<script>
+function drawIcon(size) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d');
+  const r = size * 0.19;
+  const scale = size / 512;
+
+  // Background
+  const grad = ctx.createLinearGradient(0,0,size,size);
+  grad.addColorStop(0, '#388e3c');
+  grad.addColorStop(1, '#1b5e20');
+  ctx.fillStyle = grad;
+  roundRect(ctx, 0, 0, size, size, r);
+  ctx.fill();
+
+  // Drawing (coordinates based on 512px viewBox, scaled)
+  ctx.strokeStyle = 'white';
+  ctx.lineCap = 'round';
+
+  // Head
+  ctx.beginPath();
+  ctx.arc(310*scale, 108*scale, 44*scale, 0, Math.PI*2);
+  ctx.fillStyle = 'white';
+  ctx.fill();
+
+  // Torso
+  line(ctx, 300,152, 265,295, 24, scale);
+  // Left leg
+  line(ctx, 265,295, 195,375, 22, scale);
+  line(ctx, 195,375, 162,420, 22, scale);
+  // Right leg
+  line(ctx, 265,295, 345,358, 22, scale);
+  line(ctx, 345,358, 395,400, 22, scale);
+  // Left arm (back)
+  line(ctx, 288,200, 355,168, 18, scale);
+  // Right arm (forward)
+  line(ctx, 288,200, 205,248, 18, scale);
+
+  return c;
+}
+
+function line(ctx, x1,y1,x2,y2, w, s) {
+  ctx.beginPath();
+  ctx.lineWidth = w * s;
+  ctx.moveTo(x1*s, y1*s);
+  ctx.lineTo(x2*s, y2*s);
+  ctx.stroke();
+}
+
+function roundRect(ctx, x,y,w,h,r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.arcTo(x+w,y, x+w,y+r, r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.arcTo(x+w,y+h, x+w-r,y+h, r);
+  ctx.lineTo(x+r, y+h);
+  ctx.arcTo(x,y+h, x,y+h-r, r);
+  ctx.lineTo(x, y+r);
+  ctx.arcTo(x,y, x+r,y, r);
+  ctx.closePath();
+}
+
+function generate() {
+  const out = document.getElementById('out');
+  out.innerHTML = '';
+  [192, 512].forEach(size => {
+    const c = drawIcon(size);
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:inline-block;margin:16px;text-align:center';
+    wrap.innerHTML = `<p style="margin-bottom:8px">icon-${size}.png (rechtsclick → opslaan als)</p>`;
+    c.style.cssText = `width:${size/2}px;height:${size/2}px;display:block;margin:0 auto;cursor:context-menu`;
+    c.title = `Rechtsclick → Afbeelding opslaan als icon-${size}.png`;
+    wrap.appendChild(c);
+    out.appendChild(wrap);
+  });
+}
+</script>
+</body>
+</html>

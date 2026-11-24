@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#388e3c"/>
+      <stop offset="100%" stop-color="#1b5e20"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- Head -->
+  <circle cx="310" cy="108" r="44" fill="white"/>
+  <!-- Torso -->
+  <line x1="300" y1="152" x2="265" y2="295" stroke="white" stroke-width="24" stroke-linecap="round"/>
+  <!-- Left leg (forward) -->
+  <line x1="265" y1="295" x2="195" y2="375" stroke="white" stroke-width="22" stroke-linecap="round"/>
+  <line x1="195" y1="375" x2="162" y2="420" stroke="white" stroke-width="22" stroke-linecap="round"/>
+  <!-- Right leg (back) -->
+  <line x1="265" y1="295" x2="345" y2="358" stroke="white" stroke-width="22" stroke-linecap="round"/>
+  <line x1="345" y1="358" x2="395" y2="400" stroke="white" stroke-width="22" stroke-linecap="round"/>
+  <!-- Left arm (back) -->
+  <line x1="288" y1="200" x2="355" y2="168" stroke="white" stroke-width="18" stroke-linecap="round"/>
+  <!-- Right arm (forward) -->
+  <line x1="288" y1="200" x2="205" y2="248" stroke="white" stroke-width="18" stroke-linecap="round"/>
+</svg>
