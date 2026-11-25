@@ -59,6 +59,7 @@ input:focus {
 }
 
 /* Views ------------------------------------------------ */
+[hidden] { display: none !important; }
 .view { min-height: 100vh; overflow-y: auto; }
 #view-running { display: flex; flex-direction: column; }
 

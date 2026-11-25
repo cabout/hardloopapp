@@ -416,6 +416,7 @@ function showView(name) {
   document.getElementById('view-setup').hidden   = name !== 'setup';
   document.getElementById('view-running').hidden = name !== 'running';
   document.getElementById('view-results').hidden = name !== 'results';
+  window.scrollTo(0, 0);
 
   if (name === 'running') {
     $btnPause.disabled    = false;
