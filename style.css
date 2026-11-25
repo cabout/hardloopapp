@@ -659,6 +659,11 @@ main {
 
 .history-main { flex: 1; min-width: 0; }
 
+.history-filter {
+  width: 100%;
+  margin-bottom: 4px;
+}
+
 .history-delete {
   flex-shrink: 0;
   width: 36px;

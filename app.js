@@ -57,6 +57,7 @@ let stepState      = null;  // filterstatus van de stapdetectie
 // Voice
 const VOICE_KEY   = 'hardloop-voice';
 const HISTORY_KEY = 'hardloop-history';
+let historyFilter = null;  // null = alle schema's, anders de schemanaam
 let selectedVoice = null;
 let prefVoiceName = '';
 
@@ -729,6 +730,13 @@ function bindEvents() {
     if (btn) deleteHistoryEntry(btn.dataset.date);
   });
 
+  // Geschiedenis: filter op schemanaam
+  document.getElementById('history-filter').addEventListener('change', e => {
+    const v = e.target.value;
+    historyFilter = v.startsWith('n:') ? v.slice(2) : null;
+    renderHistory();
+  });
+
   // Voice selector
   $voiceSelect.addEventListener('change', () => {
     prefVoiceName = $voiceSelect.value;
@@ -961,12 +969,31 @@ function renderHistory() {
   let history = [];
   try { history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch (_) {}
 
+  // Filter op schemanaam: opties opbouwen uit de namen in de geschiedenis
+  const $filter = document.getElementById('history-filter');
+  const names   = [...new Set(history.map(e => e.schemaName || ''))]
+    .sort((a, b) => a.localeCompare(b, 'nl'));
+  if (historyFilter !== null && !names.includes(historyFilter)) historyFilter = null;
+
+  $filter.innerHTML = '';
+  $filter.appendChild(new Option('Alle schema\'s', ''));
+  names.forEach(n => {
+    const o = new Option(n || 'Naamloos', 'n:' + n);
+    $filter.appendChild(o);
+  });
+  $filter.value  = historyFilter === null ? '' : 'n:' + historyFilter;
+  $filter.hidden = names.length < 2;
+
   if (history.length === 0) {
     $list.innerHTML = '<p class="history-empty">Nog geen trainingen opgeslagen.</p>';
     return;
   }
 
-  $list.innerHTML = history.slice(0, 15).map(e => {
+  const shown = historyFilter === null
+    ? history
+    : history.filter(e => (e.schemaName || '') === historyFilter);
+
+  $list.innerHTML = shown.slice(0, 15).map(e => {
     const d       = new Date(e.date);
     const dateStr = d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' });
     const timeStr = d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
