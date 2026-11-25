@@ -48,6 +48,12 @@ let geoWatchId     = null;
 let lastCoords     = null;
 let distanceMeters = 0;
 
+// Stappen (bewegingssensor)
+let stepCount      = 0;
+let stepSensorSeen = false; // true zodra er bewegingsdata binnenkomt
+let stepTimes      = [];    // tijdstippen van recente stappen (voor cadans)
+let stepState      = null;  // filterstatus van de stapdetectie
+
 // Voice
 const VOICE_KEY   = 'hardloop-voice';
 const HISTORY_KEY = 'hardloop-history';
@@ -72,9 +78,10 @@ let $schemaSelect, $schemaName,
     $phaseName, $phaseType,
     $blockTime, $runTotalTime,
     $phaseCounter, $progressFill,
-    $runDistance,
+    $runDistance, $runSteps,
     $btnPause, $btnStop,
     $resultTime, $resultDistance, $resultDistBlock, $resultTitle, $resultSchemaName,
+    $resultSteps, $resultStepsBlock,
     $toast;
 
 /* =====================================================
@@ -245,6 +252,9 @@ function startWorkout() {
     return;
   }
 
+  // Eerst: op iOS moet de toestemming direct binnen de klik worden gevraagd
+  startStepCounting();
+
   phases      = buildPhases(schema);
   phaseIdx    = 0;
   phaseAccum  = 0;
@@ -379,10 +389,19 @@ function updateRunDisplay(blockRem) {
   } else {
     $runDistance.textContent = '';
   }
+
+  // Stappen + cadans
+  if (stepSensorSeen) {
+    const spm = currentCadence();
+    $runSteps.textContent = `${stepCount} stappen` + (spm ? ` · ${spm} per min` : '');
+  } else {
+    $runSteps.textContent = '';
+  }
 }
 
 function showResults(completed) {
   stopGeoTracking();
+  stopStepCounting();
 
   const elapsed    = getElapsedSeconds();
   const idx        = $schemaSelect.value;
@@ -402,6 +421,13 @@ function showResults(completed) {
     $resultDistBlock.hidden     = false;
   } else {
     $resultDistBlock.hidden     = true;
+  }
+
+  if (stepSensorSeen) {
+    $resultSteps.textContent = String(stepCount);
+    $resultStepsBlock.hidden = false;
+  } else {
+    $resultStepsBlock.hidden = true;
   }
 
   renderHistory();
@@ -424,6 +450,7 @@ function showView(name) {
     $btnPause.classList.remove('resumed');
     $btnStop.textContent  = 'Stop';
     $runDistance.textContent = '';
+    $runSteps.textContent    = '';
   }
 }
 
@@ -739,6 +766,9 @@ function init() {
   $phaseCounter      = document.getElementById('phase-counter');
   $progressFill      = document.getElementById('progress-fill');
   $runDistance       = document.getElementById('run-distance');
+  $runSteps          = document.getElementById('run-steps');
+  $resultSteps       = document.getElementById('result-steps');
+  $resultStepsBlock  = document.getElementById('result-steps-block');
   $btnPause          = document.getElementById('btn-pause');
   $btnStop           = document.getElementById('btn-stop');
   $resultTime        = document.getElementById('result-time');
@@ -818,6 +848,75 @@ function stopGeoTracking() {
 }
 
 /* =====================================================
+   STAPPENTELLER (bewegingssensor)
+   ===================================================== */
+
+const STEP_THRESHOLD = 1.5;  // m/s² boven het gemiddelde om als stap te tellen
+const STEP_MIN_GAP   = 250;  // ms; max. 240 stappen per minuut
+
+function startStepCounting() {
+  stepCount      = 0;
+  stepSensorSeen = false;
+  stepTimes      = [];
+  stepState      = { smooth: null, base: null, armed: false, last: 0 };
+
+  if (typeof DeviceMotionEvent === 'undefined') return;
+
+  // iOS 13+: toestemming nodig, moet binnen een klik worden gevraagd
+  if (typeof DeviceMotionEvent.requestPermission === 'function') {
+    DeviceMotionEvent.requestPermission()
+      .then(state => {
+        if (state === 'granted') window.addEventListener('devicemotion', onDeviceMotion);
+        else toast('Geen toegang tot bewegingssensor: stappen worden niet geteld.');
+      })
+      .catch(() => {});
+  } else {
+    window.addEventListener('devicemotion', onDeviceMotion);
+  }
+}
+
+function stopStepCounting() {
+  window.removeEventListener('devicemotion', onDeviceMotion);
+}
+
+function onDeviceMotion(e) {
+  const a = e.accelerationIncludingGravity;
+  if (!a || a.x === null) return;
+  stepSensorSeen = true;
+  if (!isRunning || isPaused) return;
+
+  const mag = Math.sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
+  const s   = stepState;
+  if (s.smooth === null) { s.smooth = mag; s.base = mag; return; }
+
+  s.smooth += 0.3  * (mag - s.smooth);    // ruis eruit
+  s.base   += 0.02 * (mag - s.base);      // langzaam gemiddelde (zwaartekracht)
+  const diff = s.smooth - s.base;
+
+  if (diff < 0) {
+    s.armed = true;                       // eerst onder het gemiddelde geweest
+  } else if (s.armed && diff > STEP_THRESHOLD) {
+    const now = performance.now();
+    if (now - s.last >= STEP_MIN_GAP) {
+      stepCount++;
+      s.last = now;
+      stepTimes.push(now);
+      if (stepTimes.length > 30) stepTimes.shift();
+    }
+    s.armed = false;
+  }
+}
+
+// Stappen per minuut over de laatste ~15 seconden
+function currentCadence() {
+  const now    = performance.now();
+  const recent = stepTimes.filter(t => now - t < 15000);
+  if (recent.length < 5 || now - recent[recent.length - 1] > 3000) return 0;
+  const span = recent[recent.length - 1] - recent[0];
+  return span > 0 ? Math.round((recent.length - 1) / span * 60000) : 0;
+}
+
+/* =====================================================
    VERSTREKEN TIJD
    ===================================================== */
 
@@ -841,6 +940,7 @@ function saveWorkoutHistory({ completed, elapsed, schemaName }) {
     schemaName:      schemaName || '',
     durationSeconds: Math.round(elapsed),
     distanceMeters:  distanceMeters > 20 ? Math.round(distanceMeters) : null,
+    steps:           stepSensorSeen ? stepCount : null,
     completed
   });
 
@@ -868,13 +968,14 @@ function renderHistory() {
     const dist    = e.distanceMeters
       ? `<span class="history-dist">${(e.distanceMeters / 1000).toFixed(2)} km</span>`
       : '';
+    const steps   = e.steps ? ` · ${e.steps} stappen` : '';
     const icon    = e.completed ? '✓' : '■';
 
     return `<div class="history-item">
       <div class="history-date">${dateStr} · ${timeStr}</div>
       <div class="history-info">
         <span class="history-schema">${e.schemaName || 'Naamloos'}</span>
-        <span class="history-stats">${icon} ${dur}${dist ? ' · ' + dist : ''}</span>
+        <span class="history-stats">${icon} ${dur}${dist ? ' · ' + dist : ''}${steps}</span>
       </div>
     </div>`;
   }).join('');
