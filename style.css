@@ -650,8 +650,31 @@ main {
 #history-card { padding-bottom: 8px; }
 
 .history-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 10px 0;
   border-bottom: 1px solid var(--border);
+}
+
+.history-main { flex: 1; min-width: 0; }
+
+.history-delete {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.history-delete:hover,
+.history-delete:active {
+  background: var(--danger-bg);
+  color: var(--danger);
 }
 
 .history-item:last-child { border-bottom: none; }

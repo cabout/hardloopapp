@@ -723,6 +723,12 @@ function bindEvents() {
   // Results → terug
   document.getElementById('btn-results-back').addEventListener('click', () => showView('setup'));
 
+  // Geschiedenis: verwijderknop (event delegation, lijst wordt opnieuw opgebouwd)
+  document.getElementById('history-list').addEventListener('click', e => {
+    const btn = e.target.closest('.history-delete');
+    if (btn) deleteHistoryEntry(btn.dataset.date);
+  });
+
   // Voice selector
   $voiceSelect.addEventListener('change', () => {
     prefVoiceName = $voiceSelect.value;
@@ -972,13 +978,34 @@ function renderHistory() {
     const icon    = e.completed ? '✓' : '■';
 
     return `<div class="history-item">
-      <div class="history-date">${dateStr} · ${timeStr}</div>
-      <div class="history-info">
-        <span class="history-schema">${e.schemaName || 'Naamloos'}</span>
-        <span class="history-stats">${icon} ${dur}${dist ? ' · ' + dist : ''}${steps}</span>
+      <div class="history-main">
+        <div class="history-date">${dateStr} · ${timeStr}</div>
+        <div class="history-info">
+          <span class="history-schema">${e.schemaName || 'Naamloos'}</span>
+          <span class="history-stats">${icon} ${dur}${dist ? ' · ' + dist : ''}${steps}</span>
+        </div>
       </div>
+      <button class="history-delete" data-date="${e.date}" aria-label="Training verwijderen">✕</button>
     </div>`;
   }).join('');
+}
+
+function deleteHistoryEntry(date) {
+  let history = [];
+  try { history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch (_) {}
+
+  const entry = history.find(e => e.date === date);
+  if (!entry) return;
+
+  const d     = new Date(entry.date);
+  const label = d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' })
+              + ' ' + d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  if (!confirm(`Training van ${label} verwijderen?`)) return;
+
+  history = history.filter(e => e.date !== date);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  renderHistory();
+  toast('Training verwijderd.');
 }
 
 /* =====================================================
